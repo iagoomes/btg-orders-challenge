@@ -1,0 +1,337 @@
+openapi: 3.0.3
+info:
+  title: Orders Service API
+  description: |
+    Orders processing microservice - BTG Challenge
+    
+    This service processes orders received via RabbitMQ and provides
+    REST endpoints for querying aggregated information.
+  version: 1.0.0
+  contact:
+    name: Iago Gomes Antonio
+    email: iagoomes@outlook.com
+
+tags:
+  - name: Orders
+    description: Order related operations
+  - name: Customers
+    description: Customer related operations
+
+paths:
+  /api/v1/orders/{orderId}/total:
+    get:
+      tags:
+        - Orders
+      summary: Get order total value
+      description: Returns the calculated total value of a specific order
+      operationId: getOrderTotal
+      parameters:
+        - name: orderId
+          in: path
+          required: true
+          description: Order ID
+          schema:
+            type: integer
+            format: int64
+            example: 1001
+      responses:
+        '200':
+          description: Order total value retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderTotalResponse'
+        '404':
+          description: Order not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/customers/{customerId}/orders/count:
+    get:
+      tags:
+        - Customers
+      summary: Get customer order count
+      description: Returns the total number of orders placed by a customer
+      operationId: getCustomerOrderCount
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          description: Customer ID
+          schema:
+            type: integer
+            format: int64
+            example: 1
+      responses:
+        '200':
+          description: Customer order count retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOrderCountResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/customers/{customerId}/orders:
+    get:
+      tags:
+        - Customers
+      summary: List customer orders
+      description: Returns the list of orders placed by a specific customer
+      operationId: getCustomerOrders
+      parameters:
+        - name: customerId
+          in: path
+          required: true
+          description: Customer ID
+          schema:
+            type: integer
+            format: int64
+            example: 1
+        - name: page
+          in: query
+          required: false
+          description: Page number (starting from 0)
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+            example: 0
+        - name: size
+          in: query
+          required: false
+          description: Page size
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 10
+      responses:
+        '200':
+          description: Customer orders list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerOrdersResponse'
+        '404':
+          description: Customer not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /actuator/health:
+    get:
+      tags:
+        - Health
+      summary: Health check
+      description: Checks application health status
+      operationId: healthCheck
+      responses:
+        '200':
+          description: Application is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: UP
+
+components:
+  schemas:
+    OrderTotalResponse:
+      type: object
+      required:
+        - orderId
+        - total
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: Order ID
+          example: 1001
+        total:
+          type: number
+          format: double
+          description: Order total value
+          example: 120.50
+        currency:
+          type: string
+          description: Currency
+          example: BRL
+          default: BRL
+
+    CustomerOrderCountResponse:
+      type: object
+      required:
+        - customerId
+        - orderCount
+      properties:
+        customerId:
+          type: integer
+          format: int64
+          description: Customer ID
+          example: 1
+        orderCount:
+          type: integer
+          format: int64
+          description: Total number of orders
+          example: 5
+
+    CustomerOrdersResponse:
+      type: object
+      required:
+        - customerId
+        - orders
+        - totalElements
+        - totalPages
+        - currentPage
+      properties:
+        customerId:
+          type: integer
+          format: int64
+          description: Customer ID
+          example: 1
+        orders:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderSummary'
+          description: List of customer orders
+        totalElements:
+          type: integer
+          format: int64
+          description: Total number of elements
+          example: 25
+        totalPages:
+          type: integer
+          description: Total number of pages
+          example: 3
+        currentPage:
+          type: integer
+          description: Current page number
+          example: 0
+        pageSize:
+          type: integer
+          description: Page size
+          example: 10
+
+    OrderSummary:
+      type: object
+      required:
+        - orderId
+        - customerId
+        - totalAmount
+        - itemsCount
+        - createdAt
+      properties:
+        orderId:
+          type: integer
+          format: int64
+          description: Order ID
+          example: 1001
+        customerId:
+          type: integer
+          format: int64
+          description: Customer ID
+          example: 1
+        totalAmount:
+          type: number
+          format: double
+          description: Order total amount
+          example: 120.50
+        itemsCount:
+          type: integer
+          description: Number of items in the order
+          example: 3
+        createdAt:
+          type: string
+          format: date-time
+          description: Order creation date and time
+          example: "2024-03-15T10:30:00Z"
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          description: Order items
+
+    OrderItem:
+      type: object
+      required:
+        - product
+        - quantity
+        - price
+      properties:
+        product:
+          type: string
+          description: Product name
+          example: "pencil"
+          maxLength: 255
+        quantity:
+          type: integer
+          description: Product quantity
+          minimum: 1
+          example: 100
+        price:
+          type: number
+          format: double
+          description: Product unit price
+          minimum: 0
+          example: 1.10
+
+    ErrorResponse:
+      type: object
+      required:
+        - timestamp
+        - status
+        - error
+        - message
+        - path
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
+          example: "2024-03-15T10:30:00Z"
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        error:
+          type: string
+          description: Error type
+          example: "Not Found"
+        message:
+          type: string
+          description: Error message
+          example: "Order not found"
+        path:
+          type: string
+          description: Request path
+          example: "/api/v1/orders/1001/total"
