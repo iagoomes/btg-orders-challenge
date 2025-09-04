@@ -55,27 +55,4 @@ public class OrderData {
 
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderItemData> items;
-
-//    todo: colocar na classe de dominio
-//     Business methods
-//    public BigDecimal calculateTotalAmount() {
-//        if (items == null || items.isEmpty()) {
-//            return BigDecimal.ZERO;
-//        }
-//
-//        return items.stream()
-//                .map(OrderItemD::getTotalPrice)
-//                .reduce(BigDecimal.ZERO, BigDecimal::add);
-//    }
-//
-//    public void updateTotals() {
-//        this.itemsCount = items != null ? items.size() : 0;
-//        this.totalAmount = calculateTotalAmount();
-//    }
-//
-//    @PrePersist
-//    @PreUpdate
-//    private void prePersist() {
-//        updateTotals();
-//    }
 }

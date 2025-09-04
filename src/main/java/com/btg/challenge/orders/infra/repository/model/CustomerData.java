@@ -42,10 +42,4 @@ public class CustomerData {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<OrderData> orders;
-
-// TODO: Colocar na classe de dominio
-//  Business methods
-//    public int getTotalOrders() {
-//        return orders != null ? orders.size() : 0;
-//    }
 }

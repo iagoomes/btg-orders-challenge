@@ -55,26 +55,4 @@ public class OrderItemData {
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
-
-//    todo: colocar na classe de dominio Business methods
-//    public BigDecimal getTotalPrice() {
-//        if (totalPrice == null) {
-//            calculateTotalPrice();
-//        }
-//        return totalPrice;
-//    }
-//
-//    public void calculateTotalPrice() {
-//        if (price != null && quantity != null) {
-//            this.totalPrice = price.multiply(BigDecimal.valueOf(quantity));
-//        } else {
-//            this.totalPrice = BigDecimal.ZERO;
-//        }
-//    }
-//
-//    @PrePersist
-//    @PreUpdate
-//    private void prePersist() {
-//        calculateTotalPrice();
-//    }
 }
