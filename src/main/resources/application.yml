@@ -1,1 +1,114 @@
-spring.application.name=orders-service
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /btg-orders
+
+spring:
+  application:
+    name: orders-service
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:orders_db}
+    username: ${DB_USERNAME:orders_user}
+    password: ${DB_PASSWORD:orders_pass}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      maximum-pool-size: ${DB_POOL_SIZE:10}
+      minimum-idle: ${DB_POOL_MIN:5}
+      pool-name: OrdersHikariCP
+
+  # JPA Configuration
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:create-drop}
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+        implicit-strategy: org.springframework.boot.orm.jpa.hibernate.SpringImplicitNamingStrategy
+    show-sql: ${JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+  # RabbitMQ Configuration
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USERNAME:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    connection-timeout: 30000
+    requested-heartbeat: 30
+    listener:
+      simple:
+        concurrency: 3
+        max-concurrency: 10
+        retry:
+          enabled: true
+          initial-interval: 1000
+          max-attempts: 3
+          max-interval: 10000
+          multiplier: 2.0
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: ${HEALTH_SHOW_DETAILS:when-authorized}
+      show-components: always
+  health:
+    rabbit:
+      enabled: true
+    db:
+      enabled: true
+
+# OpenAPI Documentation
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    enabled: ${SWAGGER_ENABLED:true}
+    operations-sorter: method
+    tags-sorter: alpha
+    doc-expansion: none
+  show-actuator: true
+
+# Logging Configuration
+logging:
+  level:
+    com.btg.challenge.orders: ${LOG_LEVEL_APP:INFO}
+    org.springframework.web: ${LOG_LEVEL_WEB:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_SQL_PARAMS:WARN}
+    org.springframework.amqp: ${LOG_LEVEL_AMQP:INFO}
+    root: ${LOG_LEVEL_ROOT:INFO}
+  pattern:
+    console: "%clr(%d{yyyy-MM-dd HH:mm:ss.SSS}){faint} %clr(%5p) %clr(${PID:- }){magenta} %clr(---){faint} %clr([%15.15t]){faint} %clr(%-40.40logger{39}){cyan} %clr(:){faint} %m%n%wEx"
+
+# Custom Application Properties
+orders:
+  queue:
+    name: ${ORDERS_QUEUE_NAME:orders.queue}
+    exchange: ${ORDERS_EXCHANGE:orders.exchange}
+    routing-key: ${ORDERS_ROUTING_KEY:orders.process}
+    dead-letter-queue: ${ORDERS_DLQ:orders.dlq}
+    dead-letter-exchange: ${ORDERS_DLX:orders.dlx}
+
+  processing:
+    batch-size: ${ORDERS_BATCH_SIZE:100}
+    timeout: ${ORDERS_TIMEOUT:30000}

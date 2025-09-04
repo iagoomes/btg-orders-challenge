@@ -18,7 +18,7 @@ tags:
     description: Customer related operations
 
 paths:
-  /api/v1/orders/{orderId}/total:
+  /api/v1/orders/{order_id}/total:
     get:
       tags:
         - Orders
@@ -26,7 +26,7 @@ paths:
       description: Returns the calculated total value of a specific order
       operationId: getOrderTotal
       parameters:
-        - name: orderId
+        - name: order_id
           in: path
           required: true
           description: Order ID
@@ -54,7 +54,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/customers/{customerId}/orders/count:
+  /api/v1/customers/{customer_id}/orders/count:
     get:
       tags:
         - Customers
@@ -62,7 +62,7 @@ paths:
       description: Returns the total number of orders placed by a customer
       operationId: getCustomerOrderCount
       parameters:
-        - name: customerId
+        - name: customer_id
           in: path
           required: true
           description: Customer ID
@@ -90,7 +90,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/v1/customers/{customerId}/orders:
+  /api/v1/customers/{customer_id}/orders:
     get:
       tags:
         - Customers
@@ -98,7 +98,7 @@ paths:
       description: Returns the list of orders placed by a specific customer
       operationId: getCustomerOrders
       parameters:
-        - name: customerId
+        - name: customer_id
           in: path
           required: true
           description: Customer ID
@@ -169,10 +169,10 @@ components:
     OrderTotalResponse:
       type: object
       required:
-        - orderId
+        - order_id
         - total
       properties:
-        orderId:
+        order_id:
           type: integer
           format: int64
           description: Order ID
@@ -191,10 +191,10 @@ components:
     CustomerOrderCountResponse:
       type: object
       required:
-        - customerId
+        - customer_id
         - orderCount
       properties:
-        customerId:
+        customer_id:
           type: integer
           format: int64
           description: Customer ID
@@ -208,13 +208,13 @@ components:
     CustomerOrdersResponse:
       type: object
       required:
-        - customerId
+        - customer_id
         - orders
         - totalElements
         - totalPages
         - currentPage
       properties:
-        customerId:
+        customer_id:
           type: integer
           format: int64
           description: Customer ID
@@ -245,18 +245,18 @@ components:
     OrderSummary:
       type: object
       required:
-        - orderId
-        - customerId
+        - order_id
+        - customer_id
         - totalAmount
         - itemsCount
         - createdAt
       properties:
-        orderId:
+        order_id:
           type: integer
           format: int64
           description: Order ID
           example: 1001
-        customerId:
+        customer_id:
           type: integer
           format: int64
           description: Customer ID
