@@ -112,6 +112,7 @@ paths:
           description: Page number (starting from 0)
           schema:
             type: integer
+            format: int32
             minimum: 0
             default: 0
             example: 0
@@ -144,6 +145,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+      x-spring-paginated: true
 
   /actuator/health:
     get:
@@ -158,21 +160,17 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: UP
+                $ref: '#/components/schemas/HealthResponse'
 
 components:
   schemas:
     OrderTotalResponse:
       type: object
       required:
-        - order_id
+        - orderId
         - total
       properties:
-        order_id:
+        orderId:
           type: integer
           format: int64
           description: Order ID
@@ -191,10 +189,10 @@ components:
     CustomerOrderCountResponse:
       type: object
       required:
-        - customer_id
+        - customerId
         - orderCount
       properties:
-        customer_id:
+        customerId:
           type: integer
           format: int64
           description: Customer ID
@@ -208,13 +206,13 @@ components:
     CustomerOrdersResponse:
       type: object
       required:
-        - customer_id
+        - customerId
         - orders
         - totalElements
         - totalPages
         - currentPage
       properties:
-        customer_id:
+        customerId:
           type: integer
           format: int64
           description: Customer ID
@@ -245,18 +243,18 @@ components:
     OrderSummary:
       type: object
       required:
-        - order_id
-        - customer_id
+        - orderId
+        - customerId
         - totalAmount
         - itemsCount
         - createdAt
       properties:
-        order_id:
+        orderId:
           type: integer
           format: int64
           description: Order ID
           example: 1001
-        customer_id:
+        customerId:
           type: integer
           format: int64
           description: Customer ID
@@ -278,10 +276,10 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/OrderItem'
+            $ref: '#/components/schemas/OrderItemSummary'
           description: Order items
 
-    OrderItem:
+    OrderItemSummary:
       type: object
       required:
         - product
@@ -304,6 +302,15 @@ components:
           description: Product unit price
           minimum: 0
           example: 1.10
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          type: string
+          example: UP
 
     ErrorResponse:
       type: object
