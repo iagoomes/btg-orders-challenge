@@ -27,6 +27,15 @@ public class OrderMessagingServiceImpl implements OrderMessagingService {
         try {
             Order order = orderMessageMapper.toDomain(orderMessage);
             processOrderUseCase.execute(order);
+
+            log.info("Order message processed successfully: orderId={}",
+                    orderMessage.getCodigoPedido());
+
+        } catch (IllegalArgumentException e) {
+            log.error("Invalid order message: orderId={}, error={}",
+                    orderMessage.getCodigoPedido(), e.getMessage());
+            throw e;
+
         } catch (Exception e) {
             log.error("Error processing order message: orderId={}, error={}",
                     orderMessage.getCodigoPedido(), e.getMessage(), e);

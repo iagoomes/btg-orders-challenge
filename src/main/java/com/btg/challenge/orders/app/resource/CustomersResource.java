@@ -2,7 +2,6 @@ package com.btg.challenge.orders.app.resource;
 
 import com.btg.challenge.orders.api.CustomersApiDelegate;
 import com.btg.challenge.orders.app.service.CustomerService;
-import com.btg.challenge.orders.infra.exception.CustomerNotFoundException;
 import com.btg.challenge.orders.model.CustomerOrderCountResponse;
 import com.btg.challenge.orders.model.CustomerOrdersResponse;
 import lombok.RequiredArgsConstructor;
@@ -24,39 +23,16 @@ public class CustomersResource implements CustomersApiDelegate {
     public CompletableFuture<ResponseEntity<CustomerOrderCountResponse>> getCustomerOrderCount(Long customerId) {
         return CompletableFuture.supplyAsync(() -> {
             log.info("Getting order count for customerId: {}", customerId);
-
-            try {
-                CustomerOrderCountResponse response = customerService.getOrderCount(customerId);
-                return ResponseEntity.ok(response);
-            } catch (CustomerNotFoundException e) {
-                log.error("Customer not found: {}", customerId);
-                return ResponseEntity.notFound().build();
-            } catch (Exception e) {
-                log.error("Error getting order count for customerId: {}", customerId, e);
-                return ResponseEntity.internalServerError().build();
-            }
+            return ResponseEntity.ok(customerService.getOrderCount(customerId));
         });
     }
 
     @Override
-    public CompletableFuture<ResponseEntity<CustomerOrdersResponse>> getCustomerOrders(
-            Long customerId,
-            Integer page,
-            Integer size,
-            Pageable pageable) {
+    public CompletableFuture<ResponseEntity<CustomerOrdersResponse>> getCustomerOrders(Long customerId, Integer page, Integer size, Pageable pageable) {
         return CompletableFuture.supplyAsync(() -> {
             log.info("Getting orders for customerId: {}, pageable: {}", customerId, pageable);
-
-            try {
-                CustomerOrdersResponse response = customerService.getCustomerOrders(customerId, pageable);
-                return ResponseEntity.ok(response);
-            } catch (CustomerNotFoundException e) {
-                log.error("Customer not found: {}", customerId);
-                return ResponseEntity.notFound().build();
-            } catch (Exception e) {
-                log.error("Error getting orders for customerId: {}", customerId, e);
-                return ResponseEntity.internalServerError().build();
-            }
+            CustomerOrdersResponse response = customerService.getCustomerOrders(customerId, pageable);
+            return ResponseEntity.ok(response);
         });
     }
 }
