@@ -15,7 +15,7 @@ Microsserviço para **processamento de pedidos** com **APIs REST** e mensageria 
 * [Visão Geral](#visão-geral)
 * [Arquitetura (Clean + Delegate Pattern)](#arquitetura-clean--delegate-pattern)
 * [Início Rápido (3 passos)](#início-rápido-3-passos)
-* [Passo a passo para o avaliador](#passo-a-passo-para-o-avaliador)
+* [Passo a passo para o uso do APP](#passo-a-passo-para-o-uso-do-app)
 * [APIs REST (exemplos)](#apis-rest-exemplos)
 * [Mensageria (formato de mensagem)](#mensageria-formato-de-mensagem)
 * [Configuração (variáveis e perfis)](#configuração-variáveis-e-perfis)
@@ -66,7 +66,7 @@ flowchart LR
 
    ```bash
    git clone https://github.com/iagoomes/btg-orders-challenge.git
-   cd btg-orders-service
+   cd orders-service
    ```
 2. **Subir tudo com Docker Compose** (Postgres + RabbitMQ + App)
 
@@ -84,16 +84,54 @@ flowchart LR
 
 ---
 
-## Passo a passo para o avaliador
+## Passo a passo para o uso do APP
 
 ### 0) Pré‑requisitos
-
-* Docker Engine/Compose (v2+) e \~4 GB de RAM livres
 * Portas livres: **5432**, **5672**, **15672**, **8080**, **8081**
 
 ### 1) Subir o ambiente
 
+**🔹 Opção 1 — Docker Compose (ambiente completo)**
+
 ```bash
+git clone https://github.com/iagoomes/btg-orders-challenge.git
+cd orders-service
+docker compose up -d
+```
+
+Acesse:
+- Swagger UI: http://localhost:8080/btg-orders/swagger-ui.html
+- Healthcheck: http://localhost:8080/btg-orders/actuator/health
+- RabbitMQ UI: http://localhost:15672 (guest/guest)
+- pgAdmin: http://localhost:8081 (admin@btg.com / admin123)
+
+**🔹 Opção 2 — Imagem no Docker Hub (execução simplificada)**
+
+```bash
+docker pull freshiagoomes/btg-orders-service:latest
+
+# Criar rede
+docker network create btg-network
+
+# Subir PostgreSQL
+docker run -d --name postgres --network btg-network \
+  -e POSTGRES_DB=orders_db -e POSTGRES_USER=orders_user \
+  -e POSTGRES_PASSWORD=orders_pass postgres:16-alpine
+
+# Subir aplicação (conectando ao Postgres)
+docker run -d --name app --network btg-network -p 8080:8080 \
+  -e DB_HOST=postgres freshiagoomes/btg-orders-service:latest
+```
+
+Acesse: http://localhost:8080/btg-orders/swagger-ui.html
+
+**🔹 Opção 3 — Build local**
+
+```bash
+git clone https://github.com/iagoomes/btg-orders-challenge.git
+cd orders-service
+mvn clean package -DskipTests
+docker build -t btg-orders-service:latest .
 docker compose up -d
 ```
 
