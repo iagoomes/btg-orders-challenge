@@ -43,10 +43,14 @@ class HealthResourceTest {
 
         // Then
         assertNotNull(future);
-        assertFalse(future.isDone()); // Should be running asynchronously
-        // Wait for completion
+        // The future might complete very quickly, so we just verify it completes successfully
         assertDoesNotThrow(() -> future.get());
         assertTrue(future.isDone());
+
+        // Verify the response is correct
+        ResponseEntity<HealthResponse> response = future.join();
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("UP", response.getBody().getStatus());
     }
 
     @Test
@@ -64,6 +68,8 @@ class HealthResourceTest {
         assertNotNull(response2);
         assertEquals(HttpStatus.OK, response1.getStatusCode());
         assertEquals(HttpStatus.OK, response2.getStatusCode());
+        assertNotNull(response1.getBody());
+        assertNotNull(response2.getBody());
         assertEquals("UP", response1.getBody().getStatus());
         assertEquals("UP", response2.getBody().getStatus());
     }
@@ -79,6 +85,8 @@ class HealthResourceTest {
         ResponseEntity<HealthResponse> response2 = future2.get();
 
         // Then
+        assertNotNull(response1.getBody());
+        assertNotNull(response2.getBody());
         assertNotSame(response1.getBody(), response2.getBody());
         assertEquals(response1.getBody().getStatus(), response2.getBody().getStatus());
     }

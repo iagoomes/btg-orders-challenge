@@ -136,6 +136,118 @@ class OrderItemTest {
     }
 
     @Test
+    @DisplayName("Should validate individual null cases for isValid method")
+    void shouldValidateIndividualNullCasesForIsValidMethod() {
+        // Test when only product is null
+        orderItem.setProduct(null);
+        orderItem.setQuantity(1);
+        orderItem.setPrice(new BigDecimal("10.00"));
+        assertFalse(orderItem.isValid());
+
+        // Test when only quantity is null
+        orderItem.setProduct("ValidProduct");
+        orderItem.setQuantity(null);
+        orderItem.setPrice(new BigDecimal("10.00"));
+        assertFalse(orderItem.isValid());
+
+        // Test when only price is null
+        orderItem.setProduct("ValidProduct");
+        orderItem.setQuantity(1);
+        orderItem.setPrice(null);
+        assertFalse(orderItem.isValid());
+
+        // Test when product and quantity are null
+        orderItem.setProduct(null);
+        orderItem.setQuantity(null);
+        orderItem.setPrice(new BigDecimal("10.00"));
+        assertFalse(orderItem.isValid());
+
+        // Test when product and price are null
+        orderItem.setProduct(null);
+        orderItem.setQuantity(1);
+        orderItem.setPrice(null);
+        assertFalse(orderItem.isValid());
+
+        // Test when quantity and price are null
+        orderItem.setProduct("ValidProduct");
+        orderItem.setQuantity(null);
+        orderItem.setPrice(null);
+        assertFalse(orderItem.isValid());
+    }
+
+    @Test
+    @DisplayName("Should validate edge cases for product validation")
+    void shouldValidateEdgeCasesForProductValidation() {
+        // Test with whitespace-only product
+        orderItem.setProduct("\t\n\r ");
+        orderItem.setQuantity(1);
+        orderItem.setPrice(new BigDecimal("10.00"));
+        assertFalse(orderItem.isValid());
+
+        // Test with mixed whitespace product
+        orderItem.setProduct("  \t  ");
+        assertFalse(orderItem.isValid());
+
+        // Test with single space
+        orderItem.setProduct(" ");
+        assertFalse(orderItem.isValid());
+
+        // Test with valid product that has leading/trailing spaces
+        orderItem.setProduct("  ValidProduct  ");
+        assertTrue(orderItem.isValid()); // Should be valid as trim() removes spaces
+    }
+
+    @Test
+    @DisplayName("Should validate edge cases for quantity validation")
+    void shouldValidateEdgeCasesForQuantityValidation() {
+        orderItem.setProduct("ValidProduct");
+        orderItem.setPrice(new BigDecimal("10.00"));
+
+        // Test with exactly zero quantity
+        orderItem.setQuantity(0);
+        assertFalse(orderItem.isValid());
+
+        // Test with exactly one quantity (boundary)
+        orderItem.setQuantity(1);
+        assertTrue(orderItem.isValid());
+
+        // Test with large positive quantity
+        orderItem.setQuantity(Integer.MAX_VALUE);
+        assertTrue(orderItem.isValid());
+
+        // Test with minimum negative quantity
+        orderItem.setQuantity(Integer.MIN_VALUE);
+        assertFalse(orderItem.isValid());
+    }
+
+    @Test
+    @DisplayName("Should validate edge cases for price validation")
+    void shouldValidateEdgeCasesForPriceValidation() {
+        orderItem.setProduct("ValidProduct");
+        orderItem.setQuantity(1);
+
+        // Test with exactly zero price (boundary)
+        orderItem.setPrice(BigDecimal.ZERO);
+        assertTrue(orderItem.isValid());
+
+        // Test with positive price
+        orderItem.setPrice(new BigDecimal("0.01"));
+        assertTrue(orderItem.isValid());
+
+        // Test with large positive price
+        orderItem.setPrice(new BigDecimal("999999999999.99"));
+        assertTrue(orderItem.isValid());
+
+        // Test with slightly negative price
+        orderItem.setPrice(new BigDecimal("-0.01"));
+        assertFalse(orderItem.isValid());
+
+        // Test with very large negative price
+        orderItem.setPrice(new BigDecimal("-999999999999.99"));
+        assertFalse(orderItem.isValid());
+    }
+
+    @Test
     @DisplayName("Should handle decimal quantities in price calculation")
     void shouldHandleDecimalQuantitiesInPriceCalculation() {
         // Given
