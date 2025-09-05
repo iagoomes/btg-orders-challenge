@@ -50,7 +50,69 @@ services:
       start_period: 10s
     restart: unless-stopped
 
-  # pgAdmin (Optional - Database Management)
+  # BTG Orders Application
+  orders-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: btg-orders-service:latest
+    container_name: btg-orders-app
+    environment:
+      # Database Configuration
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: orders_db
+      DB_USERNAME: orders_user
+      DB_PASSWORD: orders_pass
+
+      # RabbitMQ Configuration
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USERNAME: guest
+      RABBITMQ_PASSWORD: guest
+
+      # JPA Configuration
+      JPA_DDL_AUTO: update
+      JPA_SHOW_SQL: false
+
+      # Logging Configuration
+      LOG_LEVEL_APP: INFO
+      LOG_LEVEL_SQL: WARN
+      LOG_LEVEL_ROOT: INFO
+      LOG_LEVEL_WEB: INFO
+      LOG_LEVEL_AMQP: INFO
+      LOG_LEVEL_SQL_PARAMS: WARN
+
+      # Queue Configuration
+      ORDERS_QUEUE_NAME: orders.queue
+      ORDERS_EXCHANGE: orders.exchange
+      ORDERS_ROUTING_KEY: orders.process
+      ORDERS_DLQ: orders.dlq
+      ORDERS_DLX: orders.dlx
+
+      # Application Configuration
+      HEALTH_SHOW_DETAILS: always
+      SWAGGER_ENABLED: true
+      SERVER_PORT: 8080
+
+    ports:
+      - "8080:8080"
+    networks:
+      - btg-orders-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:8080/btg-orders/actuator/health/liveness || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+  # pgAdmin
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: btg-orders-pgadmin

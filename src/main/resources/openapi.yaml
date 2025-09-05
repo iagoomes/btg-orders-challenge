@@ -147,20 +147,6 @@ paths:
                 $ref: '#/components/schemas/ErrorResponse'
       x-spring-paginated: true
 
-  /actuator/health:
-    get:
-      tags:
-        - Health
-      summary: Health check
-      description: Checks application health status
-      operationId: healthCheck
-      responses:
-        '200':
-          description: Application is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthResponse'
 
 components:
   schemas:
@@ -303,14 +289,6 @@ components:
           minimum: 0
           example: 1.10
 
-    HealthResponse:
-      type: object
-      required:
-        - status
-      properties:
-        status:
-          type: string
-          example: UP
 
     ErrorResponse:
       type: object
