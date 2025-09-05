@@ -1,104 +1,12 @@
-# 📚 Documentação Técnica - BTG Orders Service
+# 📚 Documentação Técnica Detalhada - BTG Orders Service
 
-## 🎯 Visão Geral do Projeto
+## 🎯 Visão Geral
 
-Este projeto demonstra a implementação de um **microsserviço** baseado em um app bancário seguindo padrões enterprise para processamento de pedidos. O sistema utiliza **mensageria assíncrona** via RabbitMQ e expõe **APIs REST** para consulta de dados agregados.
-
-### Principais Características
-
-- **Arquitetura Limpa (Clean Architecture)** com separação de responsabilidades
-- **Contract-First Development** usando OpenAPI 3.0
-- **Padrão Delegate** para separar código gerado do código de negócio
-- **Mensageria robusta** com Dead Letter Queue (DLQ)
-- **100% de cobertura de testes** unitários e de integração
-- **Containerização completa** com Docker e Docker Compose
+Esta documentação complementa o [README.md](./README.md) e [RELATORIO-TECNICO.md](./RELATORIO-TECNICO.md) com detalhes técnicos específicos da implementação.
 
 ---
 
-## 🏗️ Arquitetura e Design Patterns
-
-### Clean Architecture
-
-O projeto segue os princípios da **Clean Architecture**
-
-```
-┌─────────────────────────────────────────────────────────┐
-│                    External Interfaces                 │
-│  ┌─────────────┐ ┌─────────────┐ ┌─────────────────┐   │
-│  │   REST API  │ │  RabbitMQ   │ │   PostgreSQL    │   │
-│  └─────────────┘ └─────────────┘ └─────────────────┘   │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│                 Infrastructure Layer                   │
-│     ┌─────────────┐ ┌─────────────┐ ┌─────────────┐    │
-│     │  Resources  │ │  Providers  │ │ Repositories│    │
-│     └─────────────┘ └─────────────┘ └─────────────┘    │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│                  Application Layer                     │
-│     ┌─────────────┐ ┌─────────────┐ ┌─────────────┐    │
-│     │  Services   │ │   Mappers   │ │   DTOs      │    │
-│     └─────────────┘ └─────────────┘ └─────────────┘    │
-└─────────────────────────────────────────────────────────┘
-┌─────────────────────────────────────────────────────────┐
-│                    Domain Layer                        │
-│     ┌─────────────┐ ┌─────────────┐ ┌─────────────┐    │
-│     │  Use Cases  │ │  Entities   │ │ Interfaces  │    │
-│     └─────────────┘ └─────────────┘ └─────────────┘    │
-└─────────────────────────────────────────────────────────┘
-```
-
-### OpenAPI Specification
-
-- **Arquivo**: [`openapi.yaml`](./openapi.yaml)
-- **Swagger UI**: http://localhost:8080/btg-orders/swagger-ui.html
-- **JSON**: http://localhost:8080/btg-orders/api-docs
-
-### Padrões Implementados
-
-1. **Clean Architecture** - Separação clara de responsabilidades
-2. **Dependency Inversion** - Domain define interfaces, Infra implementa
-3. **Repository Pattern** - Abstração do acesso a dados
-4. **Mapper Pattern** - Conversão entre camadas
-5. **Strategy Pattern** - Providers intercambiáveis
-6. **Contract-First** - APIs geradas a partir de especificação
-7. **Delegate Pattern** - Separação entre código gerado e implementação
-8. **Provider Pattern** - Abstração de serviços externos
-9. **Factory Pattern** - Criação de objetos complexos
-10. **Observer Pattern** - Consumo de mensagens RabbitMQ
-
----
-
-## 🛠️ Stack Tecnológica
-
-### Core Framework
-- **[Spring Boot 3.3.x](https://spring.io/projects/spring-boot)** - Framework principal
-- **[Spring Data JPA](https://spring.io/projects/spring-data-jpa)** - Persistência de dados
-- **[Spring AMQP](https://spring.io/projects/spring-amqp)** - Integração RabbitMQ
-- **[Java 21](https://openjdk.org/projects/jdk/21/)** - Linguagem e JVM
-
-### Database & Messaging
-- **[PostgreSQL 16](https://www.postgresql.org/)** - Banco de dados relacional
-- **[RabbitMQ 3.13](https://www.rabbitmq.com/)** - Message broker
-- **[HikariCP](https://github.com/brettwooldridge/HikariCP)** - Connection pooling
-
-### Documentation & API
-- **[OpenAPI 3.0](https://swagger.io/specification/)** - Especificação de APIs
-- **[OpenAPI Generator](https://openapi-generator.tech/)** - Geração de código
-- **[Swagger UI](https://swagger.io/tools/swagger-ui/)** - Interface de documentação
-
-### Testing & Quality
-- **[JUnit 5](https://junit.org/junit5/)** - Framework de testes
-- **[Mockito](https://site.mockito.org/)** - Mock objects
-
-### DevOps & Containerization
-- **[Docker](https://www.docker.com/)** - Containerização
-- **[Docker Compose](https://docs.docker.com/compose/)** - Orquestração local
-- **[Maven](https://maven.apache.org/)** - Build e dependências
-
----
-
-## 💾 Decisões Arquiteturais
+## 🏗️ Decisões Arquiteturais Detalhadas
 
 ### Database Design
 
@@ -130,199 +38,273 @@ O projeto segue os princípios da **Clean Architecture**
 
 ---
 
-## 📊 Modelo de Dados
+## 📦 Estrutura de Pacotes
 
-### Diagrama ER
+### Organização do Código
 
-```sql
--- Estrutura principal das tabelas
-CREATE TABLE customers (
-  customer_id BIGINT PRIMARY KEY,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE orders (
-  order_id BIGINT PRIMARY KEY,
-  customer_id BIGINT REFERENCES customers(customer_id),
-  total_amount DECIMAL(10,2) NOT NULL,
-  items_count INTEGER NOT NULL,
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE order_items (
-  id BIGSERIAL PRIMARY KEY,
-  order_id BIGINT REFERENCES orders(order_id),
-  product VARCHAR(255) NOT NULL,
-  quantity INTEGER NOT NULL CHECK (quantity > 0),
-  price DECIMAL(10,2) NOT NULL CHECK (price >= 0),
-  total_price DECIMAL(10,2) GENERATED ALWAYS AS (quantity * price) STORED
-);
-
--- Índices para performance
-CREATE INDEX idx_orders_customer_id ON orders(customer_id);
-CREATE INDEX idx_orders_created_at ON orders(created_at);
-CREATE INDEX idx_order_items_order_id ON order_items(order_id);
+```
+src/main/java/com/btg/challenge/orders/
+├── app/                        # Application Layer
+│   ├── mapper/                 # Conversores entre camadas
+│   ├── resource/               # Implementações dos Resources
+│   └── service/                # Orquestração de serviços
+├── domain/                     # Domain Layer
+│   ├── entity/                 # Entidades de negócio
+│   ├── provider/               # Interfaces para infra
+│   └── usecase/                # Casos de uso
+└── infra/                      # Infrastructure Layer
+    ├── config/                 # Configurações Spring
+    ├── dataprovider/           # Implementações providers
+    └── messaging/              # Consumers RabbitMQ
 ```
 
-### Regras de Negócio
+### Convenções de Nomenclatura
 
-1. **Customer**: Criado automaticamente se não existir
-2. **Order**: Deve ter pelo menos 1 item válido
-3. **OrderItem**: Quantidade > 0, Preço >= 0
-4. **Cálculo Total**: Soma de (quantidade × preço) de todos os itens
+| Tipo | Padrão | Exemplo |
+|------|--------|---------|
+| **Entities (Domain)** | `EntityName` | `Order`, `Customer` |
+| **Entities (JPA)** | `EntityNameData` | `OrderData`, `CustomerData` |
+| **Use Cases** | `VerbNounUseCase` | `GetOrderTotalUseCase` |
+| **Providers** | `NounProvider` | `OrderProvider` |
+| **Resources** | `NounResource` | `OrdersResource` |
 
 ---
 
-## 🧪 Estratégia de Testes
-
-### Pirâmide de Testes
-
-```
-    ┌─────────────────┐
-    │   E2E Tests     │  ← API completa + Docker
-    │                 │
-    ├─────────────────┤
-    │ Integration     │  ← Repositories + Consumers
-    │    Tests        │
-    ├─────────────────┤
-    │   Unit Tests    │  ← Use Cases + Mappers + Services
-    │                 │
-    └─────────────────┘
-```
-
-### Cobertura por Camada
-
-- **Domain Layer**: 100% - Use Cases e Entities
-- **Application Layer**: 100% - Services e Mappers  
-- **Infrastructure Layer**: 100% - Configurações e Providers
-- **API Layer**: 100% - Resources e Exception Handlers
-
-
-
----
-
-## 🔐 Aspectos de Segurança
+## 🔐 Configurações de Segurança
 
 ### Validações Implementadas
+
+```yaml
+# application.yml - Configurações de validação
+spring:
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+    show-sql: false
+  
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized
+```
+
+### Aspectos de Segurança
 
 1. **Input Validation**: Bean Validation nas entradas
 2. **SQL Injection**: Proteção via JPA/Hibernate
 3. **XSS Protection**: Escape automático em JSON
 4. **CORS**: Configuração para ambientes específicos
 
-### Próximas Implementações
+---
 
-- [ ] **JWT Authentication**: Tokens para autenticação
-- [ ] **Rate Limiting**: Controle de requisições por IP
-- [ ] **Field-level Encryption**: Dados sensíveis criptografados
-- [ ] **Audit Trail**: Log de todas as operações
+## 📈 Configurações de Performance
+
+### Connection Pool (HikariCP)
+
+```yaml
+spring:
+  datasource:
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+```
+
+### Índices Estratégicos
+
+```sql
+-- Otimizações para as consultas mais frequentes
+CREATE INDEX CONCURRENTLY idx_orders_customer_created 
+  ON orders(customer_id, created_at DESC);
+
+CREATE INDEX CONCURRENTLY idx_order_items_order_product 
+  ON order_items(order_id, product);
+```
 
 ---
 
-## 📈 Monitoramento e Observabilidade
+## 🧪 Estratégia de Testes Detalhada
 
-### Health Checks
+### Pirâmide de Testes
+
+```
+    ┌─────────────────┐  ← 10% E2E Tests
+    │   E2E Tests     │    (API completa + Docker)
+    │                 │
+    ├─────────────────┤  ← 20% Integration Tests  
+    │ Integration     │    (Repositories + Consumers)
+    │    Tests        │
+    ├─────────────────┤  ← 70% Unit Tests
+    │   Unit Tests    │    (Use Cases + Mappers + Services)
+    │                 │
+    └─────────────────┘
+```
+
+### Configuração de Testes
 
 ```yaml
-# Endpoint: /actuator/health
-{
-  "status": "UP",
-  "components": {
-    "db": {"status": "UP"},
-    "rabbit": {"status": "UP"},
-    "diskSpace": {"status": "UP"}
-  }
+# application-test.yml
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+```
+
+---
+
+## 📊 Monitoramento e Observabilidade
+
+### Health Checks Customizados
+
+```java
+@Component
+public class CustomHealthIndicator implements HealthIndicator {
+    @Override
+    public Health health() {
+        // Verificações customizadas de saúde
+        return Health.up()
+            .withDetail("database", "operational")
+            .withDetail("rabbitmq", "operational")
+            .build();
+    }
 }
 ```
 
-### Métricas Disponíveis
+### Métricas Customizadas
 
-- **JVM Metrics**: Memória, GC, Threads
-- **Database Metrics**: Connection pool, query time
-- **RabbitMQ Metrics**: Messages processed, queue size
-- **HTTP Metrics**: Request count, response time
-
-### Logging Strategy
-
-```yaml
-# Níveis de log por pacote
-logging:
-  level:
-    com.btg.challenge.orders: INFO
-    org.springframework.web: DEBUG
-    org.hibernate.SQL: WARN
+```java
+@Component
+public class OrderMetrics {
+    private final Counter orderProcessedCounter;
+    private final Timer orderProcessingTimer;
+    
+    // Implementação de métricas específicas
+}
 ```
 
 ---
 
-## 🎯 Próximos Passos
+## 🔄 Fluxo de Processamento de Mensagens
 
-### Curto Prazo (1-2 sprints)
-- [ ] Implementar autenticação JWT/OAuth2
-- [ ] Adicionar rate limiting com Spring Cloud Gateway
-- [ ] Métricas customizadas com Micrometer/Prometheus
-- [ ] Circuit breaker com Resilience4j
+### Configuração RabbitMQ
 
-### Médio Prazo (3-6 meses)
-- [ ] Cache distribuído com Redis
-- [ ] Event sourcing para auditoria completa
-- [ ] Implementar CQRS pattern
-- [ ] API de administração e relatórios
+```yaml
+# Configuração completa do RabbitMQ
+rabbitmq:
+  orders:
+    queue: orders.queue
+    exchange: orders.exchange
+    routing-key: orders.process
+    dlq: orders.dlq
+    dlx: orders.dlx
+    retry-attempts: 3
+    retry-delay: 5000
+```
 
-### Longo Prazo (6+ meses)
-- [ ] Deploy em Kubernetes com Helm Charts
-- [ ] CI/CD completo com GitHub Actions
-- [ ] Distributed tracing com Jaeger/Zipkin
-- [ ] Load testing automatizado com K6
+### Dead Letter Queue Strategy
+
+```java
+@RabbitListener(queues = "orders.dlq")
+public void handleFailedMessages(OrderMessage message) {
+    // Log do erro e notificação para equipe de suporte
+    log.error("Failed to process order: {}", message);
+    // Implementar lógica de retry manual ou alertas
+}
+```
 
 ---
 
-## 📚 Referências e Links Úteis
+## 🚀 Otimizações Futuras
 
-### Documentação Oficial
+### Curto Prazo (1-2 sprints)
+- [ ] Cache distribuído com Redis
+- [ ] Métricas customizadas com Micrometer
+- [ ] Circuit breaker com Resilience4j
+- [ ] Rate limiting
 
-- **[Spring Boot Reference](https://docs.spring.io/spring-boot/docs/current/reference/html/)**
-- **[Spring Data JPA](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)**
-- **[RabbitMQ Documentation](https://www.rabbitmq.com/documentation.html)**
-- **[PostgreSQL Documentation](https://www.postgresql.org/docs/)**
-- **[OpenAPI Specification](https://swagger.io/specification/)**
+### Médio Prazo (3-6 meses)
+- [ ] Event sourcing para auditoria
+- [ ] CQRS pattern implementation
+- [ ] Distributed tracing
+- [ ] Load testing automatizado
+
+### Longo Prazo (6+ meses)
+- [ ] Kubernetes deployment
+- [ ] Service mesh (Istio)
+- [ ] Multi-region deployment
+- [ ] Advanced monitoring (Prometheus/Grafana)
+
+---
+
+## 📋 Troubleshooting Guide
+
+### Problemas Comuns
+
+| Problema | Causa Provável | Solução |
+|----------|----------------|---------|
+| **Connection refused** | PostgreSQL não iniciado | `docker compose up postgres` |
+| **Queue not found** | RabbitMQ não configurado | Verificar `definitions.json` |
+| **404 endpoints** | Context path incorreto | Usar `/btg-orders/api/v1/` |
+| **Validation errors** | Payload inválido | Verificar OpenAPI spec |
+
+### Logs Importantes
+
+```bash
+# Verificar logs da aplicação
+docker compose logs btg-orders-service
+
+# Verificar logs do RabbitMQ
+docker compose logs rabbitmq
+
+# Verificar logs do PostgreSQL
+docker compose logs postgres
+```
+
+---
+
+## 🔗 Links de Referência
 
 ### Clean Architecture & Design Patterns
-
 - **[Clean Architecture - Robert C. Martin](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)**
 - **[Domain-Driven Design](https://martinfowler.com/bliki/DomainDrivenDesign.html)**
 - **[Microservices Patterns](https://microservices.io/patterns/)**
-- **[Enterprise Integration Patterns](https://www.enterpriseintegrationpatterns.com/)**
 
-### Best Practices
-
+### Spring Boot & Java
 - **[Spring Boot Best Practices](https://springframework.guru/spring-boot-best-practices/)**
 - **[JPA Best Practices](https://thoughts-on-java.org/jpa-hibernate-best-practices/)**
-- **[RabbitMQ Best Practices](https://www.rabbitmq.com/best-practices.html)**
-- **[REST API Design Guidelines](https://restfulapi.net/)**
-
-### Testing & Quality
-
 - **[Testing Spring Boot Applications](https://spring.io/guides/gs/testing-web/)**
-- **[Testcontainers Documentation](https://www.testcontainers.org/)**
-- **[JaCoCo Documentation](https://www.jacoco.org/jacoco/trunk/doc/)**
+
+### DevOps & Containerização
+- **[Docker Best Practices](https://docs.docker.com/develop/dev-best-practices/)**
+- **[Docker Compose Reference](https://docs.docker.com/compose/compose-file/)**
 
 ---
 
-## 📄 License
+## 👨‍💻 Suporte Técnico
 
-Este projeto está licenciado sob a **MIT License** - veja o arquivo [LICENSE](LICENSE) para detalhes.
+Para dúvidas técnicas específicas sobre a implementação, consulte:
 
----
+1. **README.md** - Guia de início rápido
+2. **RELATORIO-TECNICO.md** - Análise completa do projeto
+3. **Este documento** - Detalhes técnicos específicos
+4. **Código fonte** - Implementação com comentários
 
-## 👨‍💻 Autor
-
-**Iago Gomes Antonio**  
-📧 Email: [iagoomes@outlook.com](mailto:iagoomes@outlook.com)  
-🐙 GitHub: [@iagoomes](https://github.com/iagoomes)  
-🐳 Docker Hub: [freshiagoomes](https://hub.docker.com/u/freshiagoomes)  
-💼 LinkedIn: [linkedin.com/in/iago-gomes-antonio](https://linkedin.com/in/iago-gomes-antonio)
-
----
+**Contato**: iagoomes@outlook.com
