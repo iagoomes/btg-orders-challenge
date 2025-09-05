@@ -6,47 +6,79 @@
 **Docker Hub**: https://hub.docker.com/r/freshiagoomes/btg-orders-service  
 
 [![Java 21](https://img.shields.io/badge/java-21-orange)](https://openjdk.org/projects/jdk/21/)
-[![Spring Boot 3.3](https://img.shields.io/badge/spring--boot-3.3-brightgreen)](https://spring.io/projects/spring-boot)
+[![Spring Boot 3.5](https://img.shields.io/badge/spring--boot-3.5-brightgreen)](https://spring.io/projects/spring-boot)
 [![Docker](https://img.shields.io/badge/docker-ready-blue)](https://hub.docker.com/r/freshiagoomes/btg-orders-service)
 [![Coverage](https://img.shields.io/badge/coverage-100%25-success)](./target/site/jacoco)
 
 ---
 
-## 📋 Documentação do Desafio BTG
+## 📋 Desafio BTG Pactual - Solução Completa
 
-Este repositório contém a solução completa para o **Desafio Técnico BTG Pactual** - um microsserviço para processamento de pedidos com mensageria RabbitMQ e APIs REST.
+Microsserviço para processamento de pedidos com mensageria RabbitMQ e APIs REST.
 
-### 📚 Documentos do Projeto
+### 📚 Documentos
 
-| Documento | Descrição | Link |
-|-----------|-----------|------|
-| **Plano de Trabalho** | Planejamento inicial com tasks e estimativas | [📋 PLANO-DE-TRABALHO.md](./PLANO-DE-TRABALHO.md) |
-| **Relatório Técnico** | Relatório final com resultados e análises | [📊 RELATORIO-TECNICO.md](./RELATORIO-TECNICO.md) |
-| **Documentação Técnica** | Detalhes arquiteturais e implementação | [📚 DOCUMENTACAO-TECNICA.md](DOCUMENTACAO-TECNICA.md) |
+| Documento | Link |
+|-----------|------|
+| **Plano de Trabalho** | [📋 PLANO-DE-TRABALHO.md](./PLANO-DE-TRABALHO.md) |
+| **Relatório Técnico** | [📊 RELATORIO-TECNICO.md](./RELATORIO-TECNICO.md) |
+| **Documentação Técnica** | [📚 DOCUMENTACAO-TECNICA.md](DOCUMENTACAO-TECNICA.md) |
 
 ---
 
-## 🚀 Início Rápido
+## 🚀 Execução Rápida
 
-### Pré-requisitos
-- Docker e Docker Compose
-- Portas livres: 5432, 5672, 15672, 8080
-
-### Executar a Aplicação
-
+### Opção 1: Docker Compose (Recomendado)
 ```bash
-# 1. Clonar o repositório
+# 1. Clonar repositório
 git clone https://github.com/iagoomes/btg-orders-challenge.git
 cd orders-service
 
-# 2. Subir todos os serviços
+# 2. Executar ambiente completo
 docker compose up -d
 
 # 3. Verificar status
 curl http://localhost:8080/btg-orders/actuator/health
 ```
 
-### Acessar Interfaces
+### Opção 2: Imagem Docker Hub (Deploy Direto)
+```bash
+# 1. Baixar imagem publicada
+docker pull freshiagoomes/btg-orders-service:latest
+
+# 2. Executar dependências (PostgreSQL + RabbitMQ)
+docker run -d --name postgres-btg \
+  -e POSTGRES_DB=orders_db \
+  -e POSTGRES_USER=orders_user \
+  -e POSTGRES_PASSWORD=orders_pass \
+  -p 5432:5432 \
+  postgres:16-alpine
+
+docker run -d --name rabbitmq-btg \
+  -e RABBITMQ_DEFAULT_USER=guest \
+  -e RABBITMQ_DEFAULT_PASS=guest \
+  -p 5672:5672 -p 15672:15672 \
+  rabbitmq:3.13-management-alpine
+
+# 3. Executar aplicação BTG
+docker run -d --name btg-orders-app \
+  -p 8080:8080 \
+  -e DB_HOST=host.docker.internal \
+  -e RABBITMQ_HOST=host.docker.internal \
+  freshiagoomes/btg-orders-service:latest
+
+# 4. Verificar status
+curl http://localhost:8080/btg-orders/actuator/health
+```
+
+### Opção 3: Docker Compose + Imagem Hub
+```bash
+# Usar imagem do registry em vez de build local
+docker compose -f docker-compose.yml pull orders-service
+docker compose up -d
+```
+
+### Acesso às Interfaces
 
 | Serviço | URL | Credenciais |
 |---------|-----|-------------|
@@ -56,28 +88,26 @@ curl http://localhost:8080/btg-orders/actuator/health
 
 ---
 
-## 📋 Requisitos Atendidos
+## ✅ Requisitos BTG Atendidos
 
-### ✅ Atividades Obrigatórias
+| Item | Requisito BTG | Status | Evidência |
+|------|---------------|---------|-----------|
+| 1 | Plano de trabalho | ✅ | [PLANO-DE-TRABALHO.md](./PLANO-DE-TRABALHO.md) |
+| 2 | Aplicação Java | ✅ | Spring Boot 3.5 + Java 21 |
+| 3 | Base PostgreSQL | ✅ | JPA + Hibernate |
+| 4 | Microsserviço RabbitMQ | ✅ | Consumer funcionando |
+| 5 | API REST (3 endpoints) | ✅ | Swagger disponível |
+| 6 | Relatório técnico | ✅ | [RELATORIO-TECNICO.md](./RELATORIO-TECNICO.md) |
 
-| Item | Requisito | Status | Evidência |
-|------|-----------|---------|-----------|
-| 1 | Plano de trabalho | ✅ **COMPLETO** | [PLANO-DE-TRABALHO.md](./PLANO-DE-TRABALHO.md) |
-| 2 | Aplicação Java | ✅ **COMPLETO** | Spring Boot 3.3 + Java 21 |
-| 3 | Base de dados | ✅ **COMPLETO** | PostgreSQL + JPA |
-| 4 | Microsserviço RabbitMQ | ✅ **COMPLETO** | Consumer funcionando |
-| 5 | API REST (3 endpoints) | ✅ **COMPLETO** | Swagger UI disponível |
-| 6 | Relatório técnico | ✅ **COMPLETO** | [RELATORIO-TECNICO.md](./RELATORIO-TECNICO.md) |
+### APIs Implementadas (Conforme BTG)
 
-### 🎯 APIs Implementadas
+| Endpoint | Descrição BTG | Status |
+|----------|---------------|---------|
+| `GET /api/v1/orders/{id}/total` | Valor total do pedido | ✅ |
+| `GET /api/v1/customers/{id}/orders/count` | Quantidade de pedidos por cliente | ✅ |
+| `GET /api/v1/customers/{id}/orders` | Lista de pedidos por cliente | ✅ |
 
-| Endpoint | Descrição | Exemplo |
-|----------|-----------|---------|
-| `GET /api/v1/orders/{id}/total` | Valor total do pedido | [Testar](http://localhost:8080/btg-orders/swagger-ui.html) |
-| `GET /api/v1/customers/{id}/orders/count` | Quantidade de pedidos | [Testar](http://localhost:8080/btg-orders/swagger-ui.html) |
-| `GET /api/v1/customers/{id}/orders` | Lista de pedidos (paginada) | [Testar](http://localhost:8080/btg-orders/swagger-ui.html) |
-
-### 📨 Formato da Mensagem RabbitMQ
+### Formato Mensagem RabbitMQ
 
 ```json
 {
@@ -90,241 +120,88 @@ curl http://localhost:8080/btg-orders/actuator/health
       "preco": 1.10
     },
     {
-      "produto": "caderno",
+      "produto": "caderno", 
       "quantidade": 10,
       "preco": 1.00
     }
   ]
 }
 ```
+> **Nota**: Corrigido estrutura inconsistente do exemplo BTG original
 
 ---
 
-## 🧪 Testando a Aplicação
+## 🧪 Teste da Aplicação
 
-### 1. Publicar Mensagem no RabbitMQ
-
+### 1. Publicar Mensagem RabbitMQ
 1. Acesse http://localhost:15672 (guest/guest)
-2. Vá em **Queues & Streams → orders.queue → Publish message**
-3. Cole o JSON de exemplo acima
-4. Clique em **Publish message**
+2. Queues → orders.queue → Publish message
+3. Cole JSON acima
+4. Publish message
 
-### 2. Testar APIs REST
-
+### 2. Testar APIs
 ```bash
 # Valor total do pedido
 curl http://localhost:8080/btg-orders/api/v1/orders/1001/total
 
-# Quantidade de pedidos por cliente
+# Quantidade de pedidos por cliente  
 curl http://localhost:8080/btg-orders/api/v1/customers/1/orders/count
 
-# Lista de pedidos paginada
+# Lista de pedidos por cliente
 curl "http://localhost:8080/btg-orders/api/v1/customers/1/orders?page=0&size=10"
 ```
-
-### 3. Interface Swagger
-
-Acesse http://localhost:8080/btg-orders/swagger-ui.html para testar as APIs interativamente.
 
 ---
 
 ## 🛠️ Stack Tecnológica
 
-## 🧪 Testes Opcionais (Para Desenvolvedores)
-
-> **⚠️ IMPORTANTE**: Os testes abaixo são **totalmente opcionais** e **NÃO fazem parte do deploy**. O deploy é otimizado para ser rápido (~30-45 segundos).
-
-### Script Automatizado de Testes
-
-Para desenvolvedores que desejam executar testes de validação:
-
-```bash
-# Torna o script executável (apenas uma vez)
-chmod +x scripts/test-health-jacoco.sh
-
-# Opções disponíveis:
-./scripts/test-health-jacoco.sh health   # Testa health checks
-./scripts/test-health-jacoco.sh jacoco   # Executa testes unitários + cobertura
-./scripts/test-health-jacoco.sh apis     # Testa APIs básicas
-./scripts/test-health-jacoco.sh all      # Executa todos os testes
-```
-
-### Testes Manuais - Health Checks
-
-```bash
-# Verificar se aplicação está respondendo
-curl http://localhost:8080/btg-orders/actuator/health
-
-# Testar endpoints do Actuator
-curl http://localhost:8080/btg-orders/actuator/health/liveness
-curl http://localhost:8080/btg-orders/actuator/health/readiness
-curl http://localhost:8080/btg-orders/actuator/metrics
-curl http://localhost:8080/btg-orders/actuator/prometheus
-```
-
-### Testes Manuais - Cobertura de Código
-
-```bash
-# Executar todos os testes unitários
-mvn clean test
-
-# Gerar relatório JaCoCo
-mvn jacoco:report
-
-# Abrir relatório de cobertura
-open target/site/jacoco/index.html
-```
-
-### Validação Completa (Opcional)
-
-```bash
-# Verificar build completo + testes + cobertura
-mvn clean verify
-
-# Resultado esperado:
-# - 336 testes executados
-# - 100% de cobertura
-# - Build SUCCESS
-```
-
-### Como Testar as APIs de Negócio
-
-1. **Certifique-se que a aplicação está rodando**:
-   ```bash
-   curl http://localhost:8080/btg-orders/actuator/health
-   ```
-
-2. **Publique uma mensagem de teste**:
-   - Acesse: http://localhost:15672 (guest/guest)
-   - Vá em **Queues → orders.queue → Publish message**
-   - Cole o JSON do exemplo acima
-
-3. **Teste as APIs**:
-   ```bash
-   # Valor total do pedido (substitua 1001 pelo ID do seu pedido)
-   curl http://localhost:8080/btg-orders/api/v1/orders/1001/total
-   
-   # Quantidade de pedidos por cliente
-   curl http://localhost:8080/btg-orders/api/v1/customers/1/orders/count
-   
-   # Lista paginada de pedidos
-   curl "http://localhost:8080/btg-orders/api/v1/customers/1/orders?page=0&size=10"
-   ```
-
-4. **Ou use o Swagger UI**: http://localhost:8080/btg-orders/swagger-ui.html
-
----
-
 | Categoria | Tecnologia | Versão |
 |-----------|------------|--------|
 | **Linguagem** | Java | 21 (LTS) |
-| **Framework** | Spring Boot | 3.3.4 |
-| **Banco de Dados** | PostgreSQL | 16 |
+| **Framework** | Spring Boot | 3.5.5 |
+| **Banco** | PostgreSQL | 16 |
 | **Mensageria** | RabbitMQ | 3.13 |
 | **Build** | Maven | 3.9+ |
-| **Containerização** | Docker + Compose | - |
+| **Container** | Docker + Compose | - |
 | **Documentação** | OpenAPI 3.0 + Swagger | - |
-
----
-
-## 🏗️ Arquitetura
-
-### Clean Architecture (4 Camadas)
-
-```
-┌─────────────────────────────────────────┐
-│           External Interfaces           │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │REST API │ │RabbitMQ │ │Postgres │   │
-│  └─────────┘ └─────────┘ └─────────┘   │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│        Infrastructure Layer            │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │Resources│ │Providers│ │Configs  │   │
-│  └─────────┘ └─────────┘ └─────────┘   │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│         Application Layer              │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │Services │ │Mappers  │ │DTOs     │   │
-│  └─────────┘ └─────────┘ └─────────┘   │
-└─────────────────────────────────────────┘
-┌─────────────────────────────────────────┐
-│           Domain Layer                  │
-│  ┌─────────┐ ┌─────────┐ ┌─────────┐   │
-│  │UseCases │ │Entities │ │Contracts│   │
-│  └─────────┘ └─────────┘ └─────────┘   │
-└─────────────────────────────────────────┘
-```
-
-**Detalhes**: Ver [DOCUMENTACAO-TECNICA.md](DOCUMENTACAO-TECNICA.md)
-
----
-
-## 🐳 Docker
-
-### Opções de Execução
-
-```bash
-# Opção 1: Docker Compose (recomendado)
-docker compose up -d
-
-# Opção 2: Imagem do Docker Hub
-docker pull freshiagoomes/btg-orders-service:latest
-
-# Opção 3: Build local
-mvn clean package -DskipTests
-docker build -t btg-orders-service .
-```
-
-### Serviços Incluídos
-
-- **PostgreSQL 16** (porta 5432)
-- **RabbitMQ 3.13** (portas 5672, 15672)
-- **BTG Orders Service** (porta 8080)
 
 ---
 
 ## 📊 Qualidade
 
-### Testes
-- **332 testes** automatizados
-- **100% cobertura** de código
-- Testes unitários + integração
+- **336 testes** automatizados (100% cobertura)
+- **Clean Architecture** (4 camadas)
+- **Docker** ambiente completo
+- **OpenAPI-First** desenvolvimento
 
-### Executar Testes
-
+### Executar Testes (Opcional)
 ```bash
-mvn clean test jacoco:report
+# Cobertura completa
+mvn clean verify
+
+# Relatório JaCoCo
 open target/site/jacoco/index.html
 ```
 
 ---
 
-## 🔗 Links Importantes
+## 🔗 Links BTG
 
 | Recurso | URL |
 |---------|-----|
-| **Repositório GitHub** | https://github.com/iagoomes/btg-orders-challenge |
+| **GitHub** | https://github.com/iagoomes/btg-orders-challenge |
 | **Docker Hub** | https://hub.docker.com/r/freshiagoomes/btg-orders-service |
-| **Aplicação Local** | http://localhost:8080/btg-orders |
 | **Swagger UI** | http://localhost:8080/btg-orders/swagger-ui.html |
-| **RabbitMQ Management** | http://localhost:15672 |
 
 ---
 
 ## 📧 Contato
 
 **Iago Gomes Antonio**  
-📧 Email: iagoomes@outlook.com  
-🐙 GitHub: [@iagoomes](https://github.com/iagoomes)  
-🐳 Docker Hub: [freshiagoomes](https://hub.docker.com/u/freshiagoomes)
+📧 iagoomes@outlook.com  
+🐙 [@iagoomes](https://github.com/iagoomes)  
+🐳 [freshiagoomes](https://hub.docker.com/u/freshiagoomes)
 
 ---
 
-## 📄 Licença
-
-Este projeto foi desenvolvido para o **Desafio Técnico BTG Pactual 2025**.
-
-**Status**: ✅ **PROJETO CONCLUÍDO COM SUCESSO**
+**Status**: ✅ **DESAFIO BTG CONCLUÍDO**
