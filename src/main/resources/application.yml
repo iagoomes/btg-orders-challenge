@@ -64,17 +64,60 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,prometheus
+        include: health,info,metrics,prometheus,loggers,env,beans,configprops,conditions,mappings
       base-path: /actuator
+      cors:
+        allowed-origins: "*"
+        allowed-methods: "GET,POST"
   endpoint:
     health:
-      show-details: ${HEALTH_SHOW_DETAILS:when-authorized}
+      show-details: always
       show-components: always
+      probes:
+        enabled: true
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+    loggers:
+      enabled: true
   health:
     rabbit:
       enabled: true
     db:
       enabled: true
+    diskspace:
+      enabled: true
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  info:
+    env:
+      enabled: true
+    java:
+      enabled: true
+    os:
+      enabled: true
+    build:
+      enabled: true
+    git:
+      mode: full
+  server:
+    port: 8080
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.95, 0.99
+      slo:
+        http.server.requests: 10ms, 50ms, 100ms, 200ms, 500ms
 
 # OpenAPI Documentation
 springdoc:
