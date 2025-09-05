@@ -26,7 +26,7 @@ public class OrderMapper {
         OrderSummary summary = new OrderSummary();
         summary.setOrderId(order.getOrderId());
         summary.setCustomerId(order.getCustomerId());
-        summary.setTotalAmount(order.getTotalAmount().doubleValue());
+        summary.setTotalAmount(order.getTotalAmount());
         summary.setItemsCount(order.getItemsCount());
         summary.setCreatedAt(order.getCreatedAt());
 
