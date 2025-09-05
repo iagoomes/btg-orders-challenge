@@ -1,335 +1,353 @@
-# BTG Orders Service - Desafio Técnico
+# BTG Orders Service — Desafio Técnico
 
-Microsserviço para processamento de pedidos desenvolvido seguindo padrões bancários de segurança e boas práticas. O sistema processa mensagens via RabbitMQ e disponibiliza APIs REST para consulta de informações agregadas.
+[![Java 21](https://img.shields.io/badge/java-21-orange)](https://openjdk.org/projects/jdk/21/)
+[![Spring Boot 3.3](https://img.shields.io/badge/spring--boot-3.3-brightgreen)](https://spring.io/projects/spring-boot)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://hub.docker.com/r/freshiagoomes/btg-orders-service)
+[![Coverage](https://img.shields.io/badge/coverage-100%25-success)](./target/site/jacoco)
+[![OpenAPI 3.0](https://img.shields.io/badge/spec-OpenAPI%203.0-blueviolet)](./openapi.yaml)
 
-## Estratégia de Desenvolvimento
+Microsserviço para **processamento de pedidos** com **APIs REST** e mensageria assíncrona via **RabbitMQ**. Construído com foco em **segurança**, **escalabilidade** e **boas práticas** adotadas em domínios bancários.
 
-A estratégia para o desenvolvimento foi utilizar padrões de projeto e desenvolvimento que se baseiam em segurança e boas práticas, como deve ser em um domínio bancário.
+---
 
-Visando a **reutilização de código**, o desenvolvimento foi orientado a especificações usando **OpenAPI Specification** como core. Com ela conseguimos definir nossos recursos REST de forma padronizada, permitindo que equipes de desenvolvimento e consumidores estejam alinhados sobre contratos e implementações. Esta abordagem facilita o entendimento entre áreas sobre recursos específicos, permitindo avaliar reutilização versus desenvolvimento de novas implementações. Além disso, ganha-se velocidade no desenvolvimento através do **OpenAPI Generator Plugin**, que automatiza a criação de código baseado nas especificações.
+## Sumário
 
-### OpenAPI Generator Plugin - Arquitetura de Implementação
+* [Visão Geral](#visão-geral)
+* [Arquitetura (Clean + Delegate Pattern)](#arquitetura-clean--delegate-pattern)
+* [Início Rápido (3 passos)](#início-rápido-3-passos)
+* [Passo a passo para o avaliador](#passo-a-passo-para-o-avaliador)
+* [APIs REST (exemplos)](#apis-rest-exemplos)
+* [Mensageria (formato de mensagem)](#mensageria-formato-de-mensagem)
+* [Configuração (variáveis e perfis)](#configuração-variáveis-e-perfis)
+* [Qualidade e Testes](#qualidade-e-testes)
+* [Docker / Compose](#docker--compose)
+* [Swagger UI](#swagger-ui)
+* [Troubleshooting](#troubleshooting)
+* [OpenAPI + Generator (Delegate Pattern)](#openapi--generator-delegate-pattern)
 
-O **OpenAPI Generator** é uma ferramenta poderosa que gera automaticamente código a partir de especificações OpenAPI/Swagger. Em nosso projeto, utilizamos o padrão **Delegate Pattern** para máxima flexibilidade.
+---
 
-#### Como Funciona no Projeto
+## Visão Geral
 
-Quando executamos o plugin através do Maven (`mvn clean compile`), ele gera automaticamente as seguintes classes/interfaces:
+O serviço processa mensagens de pedidos recebidas via **RabbitMQ** e expõe endpoints para consulta de totais, contagem e listagem de pedidos por cliente. A especificação **OpenAPI** guia contratos e gera parte do boilerplate (Controller + Interfaces), permitindo um fluxo *contract-first* e mantendo documentação atualizada.
 
-1. **Interface API** (ex: `CustomersApi`)
-    - Define os contratos dos endpoints
-    - Contém as assinaturas dos métodos HTTP
+---
 
-2. **Controller** (ex: `CustomersApiController`)
-    - Implementa a interface API
-    - Delega as chamadas para o Delegate
+## Arquitetura (Clean + Delegate Pattern)
 
-3. **Delegate Interface** (ex: `CustomersApiDelegate`)
-    - Interface para implementação da lógica de negócio
-    - Permite separação clara entre código gerado e implementação
+**Camadas:**
 
-#### Exemplo de Estrutura Gerada:
+* **API (Gerada)**: contratos REST + delegação
+* **Application**: orquestração e serviços de aplicação
+* **Domain**: regras de negócio puras (use cases, entidades)
+* **Infrastructure**: DB, MQ, configs e providers
 
-```java
-// Interface gerada
-public interface CustomersApi {
-    default CustomersApiDelegate getDelegate() {
-        return new CustomersApiDelegate() {};
-    }
-    // métodos dos endpoints...
-}
+**Fluxo:** API → Controller → Delegate → Resource → Service → UseCase → Provider → Database
 
-// Controller gerado
-@RestController
-public class CustomersApiController implements CustomersApi {
-    private final CustomersApiDelegate delegate;
-    // implementação...
-}
-
-// Delegate interface gerada
-public interface CustomersApiDelegate {
-    // métodos para implementar
-}
+```mermaid
+flowchart LR
+  A[OpenAPI Spec] -->|generate| B(Interface API)
+  A -->|generate| C(Controller API)
+  A -->|generate| D(Delegate API)
+  C --> D
+  D --> E[Resource (app.resource)]
+  E --> F[Service (app.service)]
+  F --> G[UseCase (domain.usecase)]
+  G --> H[Provider (infra.*)]
+  H --> I[(PostgreSQL)]
+  H --> J[(RabbitMQ)]
 ```
 
-#### Nossa Implementação:
+---
 
-Para implementar a lógica de negócio, criamos classes Resource em `app.resource` que implementam os Delegates:
+## Início Rápido (3 passos)
 
-```java
-@Component
-public class CustomersResource implements CustomersApiDelegate {
-    // Implementação real da lógica de negócio
-}
-```
+1. **Clonar e entrar no projeto**
 
-**Benefícios principais:**
-- **Contract-First Development**: API é definida primeiro, implementação depois
-- **Separação Clara**: Código gerado vs código manual
-- **Consistency**: Garante alinhamento entre especificação e código
-- **Documentation**: Swagger UI automático e sempre atualizado
-- **Flexibility**: Delegate pattern permite customização total da implementação
-- **Validation**: Requests validados automaticamente conforme spec
+   ```bash
+   git clone https://github.com/iagoomes/btg-orders-challenge.git
+   cd btg-orders-service
+   ```
+2. **Subir tudo com Docker Compose** (Postgres + RabbitMQ + App)
 
-## Arquitetura e Boas Práticas
+   ```bash
+   docker compose up -d
+   ```
+3. **Acessar**
 
-### Clean Architecture
-Aplicação segue os princípios de Clean Architecture com separação clara de responsabilidades:
-- **Domain**: Entidades e regras de negócio puras
-- **Application**: Orquestração e casos de uso
-- **Infrastructure**: Implementações de banco, filas, configurações
+    * Swagger UI: [http://localhost:8080/btg-orders/swagger-ui.html](http://localhost:8080/btg-orders/swagger-ui.html)
+    * Healthcheck: [http://localhost:8080/btg-orders/actuator/health](http://localhost:8080/btg-orders/actuator/health)
+    * RabbitMQ UI: [http://localhost:15672](http://localhost:15672) (guest/guest)
+    * pgAdmin (opcional): [http://localhost:8081](http://localhost:8081) ([admin@btg.com](mailto:admin@btg.com) / admin123)
 
-### Padrões Implementados
-- **Delegate Pattern**: Separação entre código gerado e implementação manual
-- **Dependency Inversion**: Domain define interfaces, Infrastructure implementa
-- **Repository Pattern**: Abstração do acesso a dados
-- **Mapper Pattern**: Conversão isolada entre camadas
-- **Use Case Pattern**: Encapsulamento de regras de negócio
-- **Provider Pattern**: Abstração de serviços externos
+> **Dica:** para incluir o pgAdmin, use o perfil `tools`: `docker compose --profile tools up -d`
 
-### Fluxo Arquitetural: API → Delegate → Resource → Service → UseCase → Provider
+---
 
-```
-API Interface → API Controller → API Delegate → Resource Implementation → Service → UseCase → Provider → Database
-      ↓              ↓                ↓               ↓                    ↓         ↓          ↓
-  Generated      Generated        Generated        Manual              Manual    Manual     Manual
- (OpenAPI)       (OpenAPI)        (OpenAPI)    Implementation                Implementation
-```
+## Passo a passo para o avaliador
 
-**Detalhamento do Fluxo:**
+### 0) Pré‑requisitos
 
-1. **API Interface** (Gerado)
-    - Interface com contratos dos endpoints
-    - Define métodos HTTP e assinaturas
+* Docker Engine/Compose (v2+) e \~4 GB de RAM livres
+* Portas livres: **5432**, **5672**, **15672**, **8080**, **8081**
 
-2. **API Controller** (Gerado)
-    - Implementação REST do Spring
-    - Delega chamadas para o Delegate
-
-3. **API Delegate** (Gerado)
-    - Interface para implementação customizada
-    - Ponto de extensão para lógica de negócio
-
-4. **Resource** (Manual - `app.resource`)
-    - Implementação do Delegate
-    - Orquestração entre API e Services
-
-5. **Application Service** (Manual - `app.service`)
-    - Lógica de aplicação
-    - Conversão entre DTOs e entidades de domínio
-
-6. **Domain UseCase** (Manual - `domain.usecase`)
-    - Regras de negócio puras
-    - Validações e lógica de domínio
-
-7. **Data Provider** (Manual - `infra.dataprovider`)
-    - Implementação de acesso a dados
-    - Isolamento da infraestrutura
-
-### Stack Tecnológica
-- **Java 21 LTS** + **Spring Boot 3.3** - Base sólida e moderna
-- **PostgreSQL 16** - Banco relacional para consultas complexas e JOINs
-- **RabbitMQ 3.13** - Message broker para processamento assíncrono
-- **OpenAPI 3.0** + **Generator Plugin** - Contract-first development
-- **Docker** + **Compose** - Containerização completa
-
-## Início Rápido
+### 1) Subir o ambiente
 
 ```bash
-# 1. Clonar repositório
-git clone https://github.com/iagoomes/btg-orders-challenge.git
-cd btg-orders-service
-
-# 2. Gerar código do OpenAPI
-mvn clean compile
-
-# 3. Executar aplicação completa
-docker-compose up -d
-
-# 4. Verificar funcionamento
-curl http://localhost:8080/btg-orders/actuator/health
+docker compose up -d
 ```
 
-**Aplicação disponível em:** http://localhost:8080/btg-orders/swagger-ui.html
+* Aguarde os *healthchecks* ficarem **healthy**:
 
-## Índice de Temas
+  ```bash
+  docker compose ps
+  # ou
+  curl -s http://localhost:8080/btg-orders/actuator/health
+  ```
 
-### 📊 [APIs REST](#apis-rest)
-- Endpoints de consulta
-- Paginação e filtros
-- Contratos OpenAPI
+### 2) Verificar o RabbitMQ
 
-### 📖 [Documentação Swagger](#swagger-ui)
-- Interface interativa
-- Teste de APIs
-- Especificações automáticas
+* Acesse **[http://localhost:15672](http://localhost:15672)** (guest/guest)
+* Vá em **Queues & Streams** e confira se as filas existem:
 
-### 🐳 [Docker e Containerização](#docker)
-- Ambiente completo
-- Registry público
-- Instruções de deploy
+    * `orders.queue` (processamento)
+    * `orders.dlq` (dead-letter)
+* A *exchange* `orders.exchange` e *routing key* `orders.process` estão configuradas para rotear mensagens para `orders.queue`.
 
-### 🐰 [Mensageria RabbitMQ](#mensageria)
-- Processamento assíncrono
-- Dead Letter Queue
-- Formato de mensagens
+### 3) Publicar uma mensagem de teste
 
-### 🏗️ [Arquitetura](#arquitetura-detalhada)
-- Clean Architecture
-- Delegate Pattern
-- Estrutura de camadas
+* Em **Queues → orders.queue → Publish message**:
 
-### 🧪 [Testes e Qualidade](#testes)
-- 100% cobertura
-- Testes unitários e integração
-- Relatórios de qualidade
+    * **Content type**: `application/json`
+    * **Payload** (exemplo):
 
-### ⚙️ [Configuração](#configuração)
-- Variáveis de ambiente
-- Profiles por ambiente
-- Monitoramento
+      ```json
+      {
+        "codigoPedido": 1001,
+        "codigoCliente": 1,
+        "itens": [
+          { "produto": "lápis", "quantidade": 100, "preco": 1.10 }
+        ]
+      }
+      ```
+* Alternativa via CLI (amqplib-tools/k6/amqp) não é necessária; a UI cobre o teste.
 
-## APIs REST
+### 4) Consultar as APIs
 
-### Endpoints Principais
+* **Total do pedido**
 
-| Método | Endpoint | Descrição |
-|--------|----------|-----------|
-| GET | `/api/v1/orders/{id}/total` | Valor total do pedido |
-| GET | `/api/v1/customers/{id}/orders/count` | Quantidade de pedidos por cliente |
-| GET | `/api/v1/customers/{id}/orders` | Lista de pedidos (paginada) |
+  ```bash
+  curl -s http://localhost:8080/btg-orders/api/v1/orders/1001/total | jq
+  ```
+
+  **Resposta (exemplo):**
+
+  ```json
+  { "orderId": 1001, "total": 110.0, "currency": "BRL" }
+  ```
+
+* **Quantidade de pedidos do cliente**
+
+  ```bash
+  curl -s http://localhost:8080/btg-orders/api/v1/customers/1/orders/count | jq
+  ```
+
+  **Resposta (exemplo):**
+
+  ```json
+  { "customerId": 1, "orderCount": 1 }
+  ```
+
+* **Listagem paginada de pedidos do cliente**
+
+  ```bash
+  curl -s "http://localhost:8080/btg-orders/api/v1/customers/1/orders?page=0&size=10" | jq
+  ```
+
+  **Resposta (exemplo):**
+
+  ```json
+  {
+    "customerId": 1,
+    "orders": [
+      {
+        "orderId": 1001,
+        "customerId": 1,
+        "totalAmount": "110.00",
+        "itemsCount": 1,
+        "createdAt": "2024-03-15T10:30:00Z",
+        "items": [ { "product": "pencil", "quantity": 100, "price": 1.10 } ]
+      }
+    ],
+    "totalElements": 1,
+    "totalPages": 1,
+    "currentPage": 0,
+    "pageSize": 10
+  }
+  ```
+
+> **Observação:** Os exemplos acima ilustram o contrato. O cálculo do total considera soma `quantidade × preço` por item.
+
+### 5) Explorar no Swagger
+
+* Abra: **[http://localhost:8080/btg-orders/swagger-ui.html](http://localhost:8080/btg-orders/swagger-ui.html)**
+* Execute os mesmos endpoints pela interface (com *Try it out*).
+
+### 6) (Opcional) Inspecionar no pgAdmin
+
+* **URL:** [http://localhost:8081](http://localhost:8081)
+  **Login:** `admin@btg.com` / `admin123`
+* Configure um *server* apontando para `postgres:5432` com usuário `orders_user` e senha `orders_pass`.
+
+---
+
+## APIs REST (exemplos)
 
 **Base URL:** `http://localhost:8080/btg-orders`
 
-## Swagger UI
+| Método | Endpoint                                       | Descrição                         |
+| ------ | ---------------------------------------------- | --------------------------------- |
+| GET    | `/api/v1/orders/{order_id}/total`              | Valor total do pedido             |
+| GET    | `/api/v1/customers/{customer_id}/orders/count` | Quantidade de pedidos por cliente |
+| GET    | `/api/v1/customers/{customer_id}/orders`       | Lista de pedidos (paginada)       |
 
-Acesse a documentação interativa completa:
-- **URL:** http://localhost:8080/btg-orders/swagger-ui.html
-- **API Docs:** http://localhost:8080/btg-orders/api-docs
+### Esquemas principais
 
-## Docker
+* **OrderTotalResponse** `{ orderId, total, currency }`
+* **CustomerOrderCountResponse** `{ customerId, orderCount }`
+* **CustomerOrdersResponse** `{ customerId, orders[], totalElements, totalPages, currentPage, pageSize }`
+* **OrderSummary** `{ orderId, customerId, totalAmount, itemsCount, createdAt, items[] }`
+* **OrderItemSummary** `{ product, quantity, price }`
 
-### Imagem Pública
-```bash
-docker pull freshiagoomes/btg-orders-service:latest
-```
+> A especificação completa está em [`openapi.yaml`](./openapi.yaml) e é servida pelo Swagger UI.
 
-**Docker Hub:** https://hub.docker.com/r/freshiagoomes/btg-orders-service
+---
 
-### Ambiente Completo
-O docker-compose.yml inclui todos os serviços necessários:
-- PostgreSQL com dados persistentes
-- RabbitMQ com management UI
-- Aplicação Spring Boot
-- pgAdmin para administração
+## Mensageria (formato de mensagem)
 
-## Mensageria
+**Queue:** `orders.queue`
+**Exchange:** `orders.exchange`
+**Routing key:** `orders.process`
+**DLQ:** `orders.dlq`
 
-**Formato da mensagem processada:**
+**Payload (exemplo mínimo):**
+
 ```json
 {
   "codigoPedido": 1001,
   "codigoCliente": 1,
   "itens": [
-    {
-      "produto": "lápis",
-      "quantidade": 100,
-      "preco": 1.10
-    }
+    { "produto": "lápis", "quantidade": 100, "preco": 1.10 }
   ]
 }
 ```
 
-**Configuração:**
-- Queue: `orders.queue`
-- Exchange: `orders.exchange`
-- Dead Letter Queue: `orders.dlq`
+---
 
-## Arquitetura Detalhada
+## Configuração (variáveis e perfis)
 
-### Estrutura de Pacotes
-```
-src/main/java/com/btg/challenge/orders/
-├── api/                    # Classes geradas pelo OpenAPI
-│   ├── CustomersApi.java
-│   ├── CustomersApiController.java
-│   ├── CustomersApiDelegate.java
-│   └── ...
-├── app/                    # Application Layer
-│   ├── resource/          # Implementações dos Delegates
-│   │   ├── CustomersResource.java
-│   │   ├── OrdersResource.java
-│   │   └── HealthResource.java
-│   ├── service/           # Services de aplicação
-│   └── mapper/            # Mappers entre camadas
-├── domain/                 # Domain Layer
-│   ├── entity/            # Entidades de domínio
-│   ├── usecase/           # Casos de uso
-│   └── [interfaces]       # Contratos do domínio
-├── infra/                  # Infrastructure Layer
-│   ├── config/            # Configurações
-│   ├── dataprovider/      # Implementação providers
-│   ├── mqprovider/        # RabbitMQ consumers
-│   └── repository/        # JPA repositories
-└── OrdersServiceApplication.java
-```
+| Variável              | Descrição                 | Default (Compose) |
+| --------------------- | ------------------------- | ----------------- |
+| `DB_HOST`             | Host do PostgreSQL        | `postgres`        |
+| `DB_PORT`             | Porta do PostgreSQL       | `5432`            |
+| `DB_NAME`             | Nome do DB                | `orders_db`       |
+| `DB_USERNAME`         | Usuário do DB             | `orders_user`     |
+| `DB_PASSWORD`         | Senha do DB               | `orders_pass`     |
+| `RABBITMQ_HOST`       | Host do RabbitMQ          | `rabbitmq`        |
+| `RABBITMQ_PORT`       | Porta AMQP                | `5672`            |
+| `RABBITMQ_USERNAME`   | Usuário                   | `guest`           |
+| `RABBITMQ_PASSWORD`   | Senha                     | `guest`           |
+| `JPA_DDL_AUTO`        | Estratégia DDL            | `update`          |
+| `JPA_SHOW_SQL`        | Log de SQL                | `false`           |
+| `LOG_LEVEL_APP`       | Log da app                | `INFO`            |
+| `LOG_LEVEL_SQL`       | Log SQL                   | `WARN`            |
+| `LOG_LEVEL_ROOT`      | Log root                  | `INFO`            |
+| `ORDERS_QUEUE_NAME`   | Nome da fila              | `orders.queue`    |
+| `ORDERS_EXCHANGE`     | Exchange                  | `orders.exchange` |
+| `ORDERS_ROUTING_KEY`  | Routing key               | `orders.process`  |
+| `ORDERS_DLQ`          | Dead-letter queue         | `orders.dlq`      |
+| `ORDERS_DLX`          | Dead-letter exchange      | `orders.dlx`      |
+| `HEALTH_SHOW_DETAILS` | Exibir detalhes do health | `always`          |
+| `SWAGGER_ENABLED`     | Habilitar Swagger         | `true`            |
+| `SERVER_PORT`         | Porta HTTP                | `8080`            |
 
-### Separação de Responsabilidades
+**Perfis:**
 
-#### Camada API (Gerada)
-- **Responsabilidade**: Contratos REST e delegação
-- **Componentes**: Interfaces, Controllers e Delegates gerados pelo OpenAPI
-
-#### Camada Application
-- **Responsabilidade**: Orquestração e coordenação
-- **app.resource**: Implementação dos Delegates, ponte entre API e Services
-- **app.service**: Lógica de aplicação e coordenação de use cases
-- **app.mapper**: Conversão entre DTOs e entidades de domínio
-
-#### Camada Domain
-- **Responsabilidade**: Lógica de negócio pura
-- **Independente de frameworks e infraestrutura**
-- **Define interfaces que a infraestrutura deve implementar**
-
-#### Camada Infrastructure
-- **Responsabilidade**: Implementações técnicas
-- **Implementa as interfaces definidas pelo domínio**
-- **Gerencia aspectos técnicos: DB, MQ, Config**
-
-## Testes
-
-Cobertura completa de **100%** em todas as métricas:
-- Classes, Métodos, Linhas e Branches
-- Testes unitários para toda lógica de negócio
-- Testes de integração para providers
-- Testes de configuração para setup Docker
-
-```bash
-mvn test jacoco:report
-```
-
-## Configuração
-
-### Variáveis Principais
-- `DB_HOST` - Host do PostgreSQL
-- `RABBITMQ_HOST` - Host do RabbitMQ
-- `LOG_LEVEL_APP` - Nível de log da aplicação
-- `JPA_DDL_AUTO` - Estratégia DDL do Hibernate
-
-### Profiles
-- **default** - Desenvolvimento local
-- **docker** - Ambiente containerizado
-- **test** - Execução de testes
-
-## URLs de Acesso
-
-| Serviço | URL | Credenciais |
-|---------|-----|-------------|
-| Aplicação | http://localhost:8080/btg-orders | - |
-| Swagger UI | http://localhost:8080/btg-orders/swagger-ui.html | - |
-| RabbitMQ | http://localhost:15672 | guest/guest |
-| pgAdmin | http://localhost:8081 | admin@btg.com/admin123 |
+* `default` — desenvolvimento local
+* `docker` — execução containerizada
+* `test` — execução de testes
 
 ---
 
-**Versão:** 1.0.0 | **Docker Registry:** freshiagoomes/btg-orders-service | **Desafio:** BTG Pactual
+## Qualidade e Testes
+
+* **Cobertura**: meta de 100% (classes, métodos, linhas e branches)
+* **Unitários**: regras de negócio e mapeadores
+* **Integração**: providers (DB/MQ) e configurações
+* **Relatório Jacoco**:
+
+  ```bash
+  mvn clean test jacoco:report
+  open target/site/jacoco/index.html
+  ```
+
+**Smoke tests via cURL**
+
+```bash
+# Health
+curl -s http://localhost:8080/btg-orders/actuator/health | jq
+
+# Endpoints
+curl -s http://localhost:8080/btg-orders/api/v1/orders/1001/total | jq
+curl -s http://localhost:8080/btg-orders/api/v1/customers/1/orders/count | jq
+curl -s "http://localhost:8080/btg-orders/api/v1/customers/1/orders?page=0&size=10" | jq
+```
+
+---
+
+## Docker / Compose
+
+* **Subir**: `docker compose up -d`
+* **Logs**: `docker compose logs -f orders-service`
+* **Rebuild**: `docker compose build --no-cache orders-service && docker compose up -d`
+* **Parar**: `docker compose down -v` (remove volumes)
+
+**Imagens utilizadas**: `postgres:16-alpine`, `rabbitmq:3.13-management-alpine`, `dpage/pgadmin4:latest` e `btg-orders-service:latest` (build local via `Dockerfile`).
+
+> O Compose provisiona dados persistentes (volumes) e carrega *definitions* do RabbitMQ e scripts de *init* do Postgres.
+
+---
+
+## Swagger UI
+
+* **UI**: [http://localhost:8080/btg-orders/swagger-ui.html](http://localhost:8080/btg-orders/swagger-ui.html)
+* **OpenAPI JSON**: [http://localhost:8080/btg-orders/api-docs](http://localhost:8080/btg-orders/api-docs)
+
+Para desenvolvimento *contract-first*, edite `openapi.yaml` e gere código com o plugin do **OpenAPI Generator** durante o `mvn compile`.
+
+---
+
+## Troubleshooting
+
+* **Portas em uso**: verifique `lsof -i :8080` (macOS) ou `netstat -ano | findstr 8080` (Windows). Libere ou altere as portas.
+* **Health não fica UP**: inspeccione logs do serviço `orders-service` e confirme conectividade com DB/MQ.
+* **RabbitMQ sem filas**: reinicie com `docker compose down -v && docker compose up -d` para reprovisionar *definitions*.
+* **pgAdmin não conecta**: use host `postgres`, porta `5432`, usuário `orders_user`, senha `orders_pass`.
+
+---
+
+## OpenAPI + Generator (Delegate Pattern)
+
+Quando executado `mvn clean compile`, o plugin gera:
+
+* **Interface API** (ex.: `CustomersApi`) — contratos dos endpoints
+* **Controller** (ex.: `CustomersApiController`) — recebe HTTP e delega
+* **Delegate Interface** (ex.: `CustomersApiDelegate`) — ponto de extensão
+
+**Implementação manual**: classes `app.resource` implementam os Delegates, chamando **Services** (aplicação), **UseCases** (domínio) e **Providers** (infra). Essa abordagem garante **separação clara** entre código gerado e de negócio, documentação **sempre atualizada** e **validação automática** de requests conforme a spec.
+
+---
+
+**Versão:** 1.0.0
+**Docker Registry:** `freshiagoomes/btg-orders-service`
+**Desafio:** BTG Pactual
