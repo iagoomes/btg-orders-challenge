@@ -3,6 +3,7 @@ package com.btg.challenge.orders.app.service.impl;
 import com.btg.challenge.orders.app.service.OrderMessagingService;
 import com.btg.challenge.orders.domain.entity.Order;
 import com.btg.challenge.orders.domain.usecase.ProcessOrderUseCase;
+import com.btg.challenge.orders.infra.exception.OrderMessageNullException;
 import com.btg.challenge.orders.infra.mqprovider.OrderMessage;
 import com.btg.challenge.orders.app.mapper.OrderMessageMapper;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,9 @@ public class OrderMessagingServiceImpl implements OrderMessagingService {
     @Override
     @Transactional
     public void processOrderMessage(OrderMessage orderMessage) {
+        if (orderMessage == null) {
+            throw new OrderMessageNullException();
+        }
         log.info("Processing order message: orderId={}, customerId={}",
                 orderMessage.getCodigoPedido(), orderMessage.getCodigoCliente());
 

@@ -46,7 +46,7 @@ public class CustomerMapper {
 
     public CustomerOrdersResponse toCustomerOrdersResponse(Customer customer, Page<Order> orderPage) {
         CustomerOrdersResponse response = toCustomerOrdersResponse(orderPage);
-        response.setCustomerId(customer.getCustomerId());
+        response.setCustomerId(customer != null ? customer.getCustomerId() : null);
         return response;
     }
 }

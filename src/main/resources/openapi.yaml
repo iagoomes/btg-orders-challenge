@@ -260,10 +260,10 @@ components:
           description: Customer ID
           example: 1
         totalAmount:
-          type: number
-          format: double
+          type: string
+          format: decimal
           description: Order total amount
-          example: 120.50
+          example: "120.50"
         itemsCount:
           type: integer
           description: Number of items in the order
